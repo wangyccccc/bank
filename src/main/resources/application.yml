@@ -1,0 +1,87 @@
+application:
+  name: Bank
+spring:
+  profiles:
+    active: local
+  application:
+    name: ${application.name}-${application.module:}
+  security:
+    user:
+      name: ${application.name}
+      password: ${application.name}
+  web:
+    locale: zh_CN
+    resources:
+      add-mappings: false
+  mvc:
+    log-resolved-exception: true
+    throw-exception-if-no-handler-found: true
+  thymeleaf:
+    check-template-location: false
+  jackson:
+    time-zone: Asia/Shanghai
+    default-property-inclusion: non_null
+  servlet:
+    multipart:
+      max-file-size: 100MB
+      max-request-size: ${spring.servlet.multipart.max-file-size}
+  task:
+    execution:
+      pool:
+        core-size: 10
+        max-size: 100
+        keep-alive: 30s
+  output:
+    ansi:
+      enabled: always
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    type: com.alibaba.druid.pool.DruidDataSource
+    druid:
+      initial-size: 10
+      min-idle: 50
+      max-active: 500
+      max-wait: 60000
+      time-between-eviction-runs-millis: 60000
+      min-evictable-idle-time-millis: 300000
+      max-evictable-idle-time-millis: 900000
+      validationQuery: SELECT 1 FROM DUAL
+      test-while-idle: true
+      test-on-borrow: false
+      test-on-return: false
+      web-stat-filter:
+        enabled: true
+      stat-view-servlet:
+        enabled: true
+        allow: ""
+      filter:
+        stat:
+          enabled: true
+          merge-sql: true
+          log-slow-sql: true
+          slow-sql-millis: 2000
+logging:
+  pattern:
+    console: ${CONSOLE_LOG_PATTERN:%clr(%d{yyyy-MM-dd HH:mm:ss.SSS}){faint} %clr(${LOG_LEVEL_PATTERN:-%5p}) %clr(${PID:- }){magenta} %clr(---){faint} %clr([%15.15t]){faint} %clr(%-40.40logger{39}  %-5.5L{5}){cyan} %clr{yellow} %clr(:){faint} %m%n${LOG_EXCEPTION_CONVERSION_WORD:%wEx}} # \u63A7\u5236\u53F0\u65E5\u5FD7\u6253\u5370\u683C\u5F0F
+server:
+  shutdown: graceful
+  tomcat:
+    threads:
+      max: 500
+      min-spare: 100
+    max-connections: 10000
+    accept-count: 1000
+    max-http-form-post-size: -1
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  endpoint:
+    health:
+      show-details: always
+mybatis-plus:
+  global-config:
+    banner: false
+    db-config:
+      id-type: input
