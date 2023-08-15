@@ -5,6 +5,7 @@ import com.example.bank.entity.BankDeposit;
 import com.example.bank.entity.User;
 import com.example.bank.group.QueryGroup;
 import com.example.bank.model.dto.BankDepositDTO;
+import com.example.bank.model.vo.BankDepositVO;
 import com.example.bank.service.BankDepositService;
 import com.example.bank.service.UserService;
 import com.example.bank.utils.ReflectUtils;
@@ -12,10 +13,12 @@ import com.example.bank.utils.bank.enums.BankType;
 import com.example.bank.utils.bank.enums.DepositType;
 import com.example.bank.utils.jwt.JwtUtils;
 import com.example.bank.utils.jwt.enums.AuthRole;
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.groups.Default;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.beanutils.PropertyUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -25,6 +28,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.List;
@@ -38,6 +42,7 @@ public class BankDepositController {
     private final UserService userService;
     private final BankDepositService bankDepositService;
 
+    @Operation(summary = "查询个人用户银行利率")
     @PreAuthorize("hasRole('" + AuthRole.USER_ROLE + "')")
     @GetMapping("person/user")
     public Object personUser(@Validated({Default.class}) BankDepositDTO dto) {
@@ -50,6 +55,7 @@ public class BankDepositController {
         return this.getRate(dto, bankDeposit);
     }
 
+    @Operation(summary = "查询个人员工银行利率")
     @PreAuthorize("hasRole('" + AuthRole.EMPLOYEES_ROLE + "')")
     @GetMapping("person/employees")
     public Object personEmployees(@Validated BankDepositDTO dto, HttpServletRequest request) {
@@ -57,6 +63,7 @@ public class BankDepositController {
         return this.personUser(dto);
     }
 
+    @Operation(summary = "查询单位用户银行利率")
     @PreAuthorize("hasRole('" + AuthRole.USER_ROLE + "')")
     @GetMapping("unit/user")
     public Object unitUser(@Validated({QueryGroup.class, Default.class}) BankDepositDTO dto) {
@@ -69,6 +76,7 @@ public class BankDepositController {
         return this.getRate(dto, bankDeposit);
     }
 
+    @Operation(summary = "查询单位员工银行利率")
     @PreAuthorize("hasRole('" + AuthRole.EMPLOYEES_ROLE + "')")
     @GetMapping("unit/employees")
     public Object unitEmployees(@Validated BankDepositDTO dto, HttpServletRequest request) {
@@ -103,14 +111,30 @@ public class BankDepositController {
     public Object getRate(BankDepositDTO dto, BankDeposit bankDeposit) {
         if (StringUtils.isBlank(dto.getField())) {
             // 如果不查询直接返回整个结果
-            return bankDeposit;
+            return Optional.ofNullable(bankDeposit).map(b -> {
+                BankDepositVO result = new BankDepositVO();
+                try {
+                    PropertyUtils.copyProperties(result, b);
+                } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
+                    throw new RuntimeException(e);
+                }
+                return result;
+            }).orElse(null);
         }
         // 过滤出只需要对应的利率信息
-        Field field = Arrays.stream(BankDeposit.class.getDeclaredFields())
+        Field field = Arrays.stream(BankDepositVO.class.getDeclaredFields())
                 .filter(f -> dto.getField().equals(Optional.ofNullable(f.getAnnotation(Schema.class)).map(Schema::name).orElse(null)))
                 .findFirst()
                 .orElseThrow(() -> new RuntimeException("查询字段不存在"));
-        return Optional.ofNullable(bankDeposit).map(b -> ReflectUtils.getValue(b, field)).orElse(null);
+        return Optional.ofNullable(bankDeposit).map(b -> {
+            BankDepositVO result = new BankDepositVO();
+            try {
+                PropertyUtils.copyProperties(result, b);
+            } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
+                throw new RuntimeException(e);
+            }
+            return result;
+        }).map(b -> ReflectUtils.getValue(b, field)).orElse(null);
     }
 
     /**
@@ -120,6 +144,7 @@ public class BankDepositController {
      */
     public void setTime(BankDepositDTO dto) {
         List<LocalDate> times = bankDepositService.list(new QueryWrapper<BankDeposit>().lambda()
+                        .eq(BankDeposit::getBankType, dto.getBankType())
                         .groupBy(BankDeposit::getTime)
                         .select(BankDeposit::getTime)).stream()
                 .map(BankDeposit::getTime).sorted((a, b) -> -a.compareTo(b))

@@ -20,6 +20,7 @@ import java.time.Duration;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
@@ -90,8 +91,8 @@ public enum BankType {
         }
 
         @Override
-        public BankDeposit parserUnit() {
-            return null;
+        public List<BankDeposit> parserUnit() {
+            return Collections.emptyList();
         }
     },
 
@@ -214,8 +215,8 @@ public enum BankType {
         }
 
         @Override
-        public BankDeposit parserUnit() {
-            return null;
+        public List<BankDeposit> parserUnit() {
+            return Collections.emptyList();
         }
     },
 
@@ -365,32 +366,85 @@ public enum BankType {
         }
 
         @Override
-        public BankDeposit parserUnit() throws Exception {
-            LocalDate date = LocalDate.of(2023, 6, 8);
-            Document document = Jsoup.parse(new URL("http://www2.ccb.com/chn/2023-06/07/article_2023060719073871578.shtml"), 5000);
-            Elements trs = Objects.requireNonNull(document.getElementById("ti")).select("tr");
-            BankDeposit bankDeposit = new BankDeposit();
-            for (int i = 0; i < trs.size(); i++) {
-                Element element = trs.get(i);
-                switch (i) {
-                    case 1 -> bankDeposit.setHuoqi(new BigDecimal(element.child(1).text()));
-                    case 3 -> bankDeposit.setZczqThreeMonths(new BigDecimal(element.child(1).text()));
-                    case 4 -> bankDeposit.setZczqHalfYear(new BigDecimal(element.child(1).text()));
-                    case 5 -> bankDeposit.setZczqOneYear(new BigDecimal(element.child(1).text()));
-                    case 6 -> bankDeposit.setZczqTwoYears(new BigDecimal(element.child(1).text()));
-                    case 7 -> bankDeposit.setZczqThreeYears(new BigDecimal(element.child(1).text()));
-                    case 8 -> bankDeposit.setZczqFiveYears(new BigDecimal(element.child(1).text()));
-                    case 9 -> bankDeposit.setXdck(new BigDecimal(element.child(1).text()));
-                    case 10 -> bankDeposit.setTzOneDay(new BigDecimal(element.child(2).text()));
-                    case 11 -> bankDeposit.setTzSevenDay(new BigDecimal(element.child(1).text()));
+        public List<BankDeposit> parserUnit() throws Exception {
+            List<BankDeposit> results = new ArrayList<>();
+            Document document = Jsoup.parse(new URL("http://www2.ccb.com/chn/personal/interestv3/rmbdeposit_dw.shtml"), 5000);
+            Elements lis = document.getElementsByClass("list_ul").get(0).select("li");
+            for (Element li : lis) {
+                BankDeposit bankDeposit = new BankDeposit();
+                LocalDate time = LocalDate.parse(li.text(), DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+                document = Jsoup.parse(new URL("http://www2.ccb.com" + li.attr("name")), 5000);
+                Elements trs = Objects.requireNonNull(document.getElementById("ti")).select("tr");
+                switch (time.toString()) {
+                    case "2023-06-08" -> {
+                        for (int i = 0; i < trs.size(); i++) {
+                            Element element = trs.get(i);
+                            switch (i) {
+                                case 1 -> bankDeposit.setHuoqi(new BigDecimal(element.child(1).text()));
+                                case 3 -> bankDeposit.setZczqThreeMonths(new BigDecimal(element.child(1).text()));
+                                case 4 -> bankDeposit.setZczqHalfYear(new BigDecimal(element.child(1).text()));
+                                case 5 -> bankDeposit.setZczqOneYear(new BigDecimal(element.child(1).text()));
+                                case 6 -> bankDeposit.setZczqTwoYears(new BigDecimal(element.child(1).text()));
+                                case 7 -> bankDeposit.setZczqThreeYears(new BigDecimal(element.child(1).text()));
+                                case 8 -> bankDeposit.setZczqFiveYears(new BigDecimal(element.child(1).text()));
+                                case 9 -> bankDeposit.setXdck(new BigDecimal(element.child(1).text()));
+                                case 10 -> bankDeposit.setTzOneDay(new BigDecimal(element.child(2).text()));
+                                case 11 -> bankDeposit.setTzSevenDay(new BigDecimal(element.child(1).text()));
+                                default -> {
+                                }
+                            }
+                        }
+                    }
+                    case "1998-07-01", "1998-03-25", "1997-10-23", "1996-08-23", "1996-05-01" -> {
+                        for (int i = 0; i < trs.size(); i++) {
+                            Element element = trs.get(i);
+                            switch (i) {
+                                case 2 -> bankDeposit.setHuoqi(new BigDecimal(element.child(1).text()));
+                                case 5 -> bankDeposit.setZczqThreeMonths(new BigDecimal(element.child(1).text()));
+                                case 6 -> bankDeposit.setZczqHalfYear(new BigDecimal(element.child(1).text()));
+                                case 7 -> bankDeposit.setZczqOneYear(new BigDecimal(element.child(1).text()));
+                                case 8 -> bankDeposit.setZczqTwoYears(new BigDecimal(element.child(1).text()));
+                                case 9 -> bankDeposit.setZczqThreeYears(new BigDecimal(element.child(1).text()));
+                                case 10 -> bankDeposit.setZczqFiveYears(new BigDecimal(element.child(1).text()));
+                                default -> {
+                                }
+                            }
+                        }
+                    }
+                    case "1955-10-01" -> {
+                        for (int i = 0; i < trs.size(); i++) {
+                            Element element = trs.get(i);
+                            if (i == 2) {
+                                bankDeposit.setHuoqi(new BigDecimal(element.child(1).text()));
+                            }
+                        }
+                    }
                     default -> {
+                        for (int i = 0; i < trs.size(); i++) {
+                            Element element = trs.get(i);
+                            switch (i) {
+                                case 2 -> bankDeposit.setHuoqi(new BigDecimal(element.child(1).text()));
+                                case 5 -> bankDeposit.setZczqThreeMonths(new BigDecimal(element.child(1).text()));
+                                case 6 -> bankDeposit.setZczqHalfYear(new BigDecimal(element.child(1).text()));
+                                case 7 -> bankDeposit.setZczqOneYear(new BigDecimal(element.child(1).text()));
+                                case 8 -> bankDeposit.setZczqTwoYears(new BigDecimal(element.child(1).text()));
+                                case 9 -> bankDeposit.setZczqThreeYears(new BigDecimal(element.child(1).text()));
+                                case 10 -> bankDeposit.setZczqFiveYears(new BigDecimal(element.child(1).text()));
+                                case 11 -> bankDeposit.setXdck(new BigDecimal(element.child(1).text()));
+                                case 13 -> bankDeposit.setTzOneDay(new BigDecimal(element.child(1).text()));
+                                case 14 -> bankDeposit.setTzSevenDay(new BigDecimal(element.child(1).text()));
+                                default -> {
+                                }
+                            }
+                        }
                     }
                 }
+                bankDeposit.setTime(time);
+                bankDeposit.setBankType(JIANSHE);
+                bankDeposit.setDepositType(DepositType.UNIT);
+                results.add(bankDeposit);
             }
-            bankDeposit.setTime(date);
-            bankDeposit.setBankType(JIANSHE);
-            bankDeposit.setDepositType(DepositType.UNIT);
-            return bankDeposit;
+            return results;
         }
     },
 
@@ -451,8 +505,8 @@ public enum BankType {
         }
 
         @Override
-        public BankDeposit parserUnit() {
-            return null;
+        public List<BankDeposit> parserUnit() {
+            return Collections.emptyList();
         }
     },
 
@@ -507,8 +561,8 @@ public enum BankType {
         }
 
         @Override
-        public BankDeposit parserUnit() {
-            return null;
+        public List<BankDeposit> parserUnit() {
+            return Collections.emptyList();
         }
     },
 
@@ -526,6 +580,6 @@ public enum BankType {
      *
      * @return 解析单位存款挂牌利率表
      */
-    public abstract BankDeposit parserUnit() throws Exception;
+    public abstract List<BankDeposit> parserUnit() throws Exception;
 
 }

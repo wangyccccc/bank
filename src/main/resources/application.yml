@@ -85,3 +85,13 @@ mybatis-plus:
     banner: false
     db-config:
       id-type: input
+kit:
+  doc:
+    title: ${application.name} API Docs
+    version: ${application.version}
+    author: Vaulka
+    request-parameters:
+      HEADER:
+        - Authorization
+springdoc:
+  default-flat-param-object: true
