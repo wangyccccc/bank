@@ -85,7 +85,7 @@ public class BankDepositController {
     }
 
     /**
-     * 员工获取对应的银行信息进行拆训条件填充
+     * 员工获取对应的银行信息进行查询条件填充
      *
      * @param dto     查询信息
      * @param request request
