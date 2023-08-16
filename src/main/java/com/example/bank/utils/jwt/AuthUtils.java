@@ -16,7 +16,7 @@ public class AuthUtils {
 
     private final UserMapper userMapper;
 
-    private final static String SECRET = "Vaulka";
+    private final static String SECRET = "Wyc";
 
     /**
      * 获取用户信息
