@@ -3,6 +3,8 @@ package com.example.bank.utils.bank.enums;
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONObject;
 import com.example.bank.entity.BankDeposit;
+import com.example.bank.utils.ReflectUtils;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.jsoup.Jsoup;
@@ -10,6 +12,7 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
+import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.net.URL;
@@ -19,10 +22,7 @@ import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 @Getter
 @AllArgsConstructor
@@ -500,6 +500,26 @@ public enum BankType {
                 bankDeposit.setBankType(JIAOTONG);
                 bankDeposit.setDepositType(DepositType.PERSON);
                 results.add(bankDeposit);
+            }
+            // 如果没有数据，则自动获取上一次的数据
+            for (int i = 0; i < results.size(); i++) {
+                BankDeposit bankDeposit = results.get(i);
+                final int skipNum = i + 1;
+                List<Field> fields = Arrays.stream(BankDeposit.class.getDeclaredFields())
+                        .filter(f -> f.getAnnotation(Schema.class) != null)
+                        .toList();
+                for (Field field : fields) {
+                    Object value = ReflectUtils.getValue(bankDeposit, field);
+                    if (value != null) {
+                        continue;
+                    }
+                    BigDecimal val = results.stream()
+                            .skip(skipNum)
+                            .map(b -> ReflectUtils.getValue(b, field))
+                            .filter(Objects::nonNull)
+                            .findFirst().map(Objects::toString).map(BigDecimal::new).orElse(null);
+                    ReflectUtils.setValue(bankDeposit, field, val);
+                }
             }
             return results;
         }
