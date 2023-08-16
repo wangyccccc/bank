@@ -36,7 +36,7 @@ public class LoginController {
                 .filter(u -> bCryptPasswordEncoder.matches(login.getPassword(), u.getPassword()))
                 .orElseThrow(() -> new RuntimeException("用户名或密码错误"));
         LoginVO result = objectMapper.readValue(objectMapper.writeValueAsString(user), LoginVO.class);
-        result.setAuthorization(JwtUtils.create(result.getId(), DateUtils.addHours(new Date(), 2), "Vaulka"));
+        result.setAuthorization(JwtUtils.create(result.getId(), DateUtils.addHours(new Date(), 2), "wyc"));
         return result;
     }
 
