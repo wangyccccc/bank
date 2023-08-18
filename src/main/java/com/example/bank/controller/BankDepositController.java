@@ -94,7 +94,7 @@ public class BankDepositController {
         String authorization = request.getHeader(HttpHeaders.AUTHORIZATION);
         Long id = JwtUtils.getId(authorization);
         BankType bankType = Optional.ofNullable(userService.getOne(new QueryWrapper<User>().lambda()
-                        .eq(User::getId, id))
+                        .eq(User::getId, id)) // where id = {id}
                 )
                 .map(User::getBankType)
                 .orElseThrow(() -> new RuntimeException("用户不存在"));

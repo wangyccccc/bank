@@ -56,7 +56,7 @@ public class BankDepositServiceImpl extends ServiceImpl<BankDepositMapper, BankD
         }
     }
 
-    @Scheduled(cron = "0 0 0 ? * *")
+    @Scheduled(cron = "0 * * ? * *")
     @Transactional(rollbackFor = Exception.class)
     public void sync() throws Exception {
         HttpClient client = HttpClient.newBuilder()
@@ -76,11 +76,12 @@ public class BankDepositServiceImpl extends ServiceImpl<BankDepositMapper, BankD
                 .getJSONArray("data").toJSONString();
         List<LocalDate> times = JSON.parseArray(json, LocalDate.class);
         LocalDate time = times.get(0);
+        // 获取最新利率发布时间
         for (BankType bankType : BankType.values()) {
             long count = this.count(new QueryWrapper<BankDeposit>().lambda()
                     .eq(BankDeposit::getBankType, bankType)
                     .eq(BankDeposit::getTime, time));
-            if (count == 0) {
+            if (count > 0) {
                 continue;
             }
             List<BankDeposit> results = new ArrayList<>();

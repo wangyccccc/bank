@@ -13,13 +13,13 @@ public class BankDepositDTO {
     /**
      * 时间
      */
-    @NotNull
+
     private LocalDate time;
 
     /**
      * 银行类型
      */
-    @NotNull(groups = {QueryGroup.class})
+
     private BankType bankType;
 
     /**
