@@ -32,6 +32,7 @@ public class BankDepositServiceImpl extends ServiceImpl<BankDepositMapper, BankD
     public void init() {
         long count = this.count(new QueryWrapper<BankDeposit>().lambda());
         if (count > 0) {
+            // 如果有数据则直接跳过，后续只需要爬取最新数据
             return;
         }
         List<BankDeposit> bankDeposits = Arrays.stream(BankType.values())
@@ -55,55 +56,36 @@ public class BankDepositServiceImpl extends ServiceImpl<BankDepositMapper, BankD
             this.saveBatch(bankDeposits);
         }
     }
-
-    @Scheduled(cron = "0 * * ? * *")
+//每24小时维护一遍
+    @Scheduled(cron = "0 0 0 ? * *")
     @Transactional(rollbackFor = Exception.class)
     public void sync() throws Exception {
-        HttpClient client = HttpClient.newBuilder()
-                .version(HttpClient.Version.HTTP_2)
-                .connectTimeout(Duration.ofSeconds(10))
-                .followRedirects(HttpClient.Redirect.ALWAYS)
-                .build();
-        HttpRequest.Builder baseBuilder = HttpRequest.newBuilder()
-                .uri(new URI("https://papi.icbc.com.cn/interestRate/deposit/queryRMBDepositDateList?type=CH"))
-                .timeout(Duration.ofSeconds(10))
-                .version(HttpClient.Version.HTTP_2);
-        HttpRequest request = baseBuilder
-                .GET()
-                .build();
-        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-        String json = JSON.parseObject(response.body())
-                .getJSONArray("data").toJSONString();
-        List<LocalDate> times = JSON.parseArray(json, LocalDate.class);
-        LocalDate time = times.get(0);
-        // 获取最新利率发布时间
+        List<BankDeposit> results = new ArrayList<>();
         for (BankType bankType : BankType.values()) {
-            long count = this.count(new QueryWrapper<BankDeposit>().lambda()
-                    .eq(BankDeposit::getBankType, bankType)
-                    .eq(BankDeposit::getTime, time));
-            if (count > 0) {
-                continue;
-            }
-            List<BankDeposit> results = new ArrayList<>();
-            try {
-                results.addAll(bankType.parserPerson());
-                results.addAll(bankType.parserUnit());
-            } catch (Exception e) {
-                throw new RuntimeException(e.getLocalizedMessage(), e);
-            }
-            results = results.stream()
-                    .filter(Objects::nonNull)
-                    .filter(r -> r.getTime().equals(time))
-                    .peek(b -> {
-                        b.setId(IdWorker.getId());
-                        b.setCreateTime(LocalDateTime.now());
-                        b.setCreateBy(0L);
-                    })
-                    .toList();
+            save(results, bankType, bankType.parserPerson());
+            save(results, bankType, bankType.parserUnit());
             if (results.size() > 0) {
                 this.saveBatch(results);
             }
         }
+    }
+
+    private void save(List<BankDeposit> results, BankType bankType, List<BankDeposit> bankDeposits) {
+        if (bankDeposits.size() == 0) {
+            return;
+        }
+        // 取出最新数据
+        BankDeposit bankDeposit = bankDeposits.get(0);
+        long count = this.count(new QueryWrapper<BankDeposit>().lambda()
+                .eq(BankDeposit::getBankType, bankType)
+                .eq(BankDeposit::getTime, bankDeposit.getTime())
+                .eq(BankDeposit::getDepositType, bankDeposit.getDepositType())
+        );
+        if (count > 0) {
+            // 有数据则忽略
+            return;
+        }
+        results.add(bankDeposit);
     }
 
 }

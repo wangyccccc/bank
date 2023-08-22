@@ -23,6 +23,7 @@ import java.time.Duration;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Getter
 @AllArgsConstructor
@@ -87,7 +88,7 @@ public enum BankType {
                 bankDeposit.setDepositType(DepositType.PERSON);
                 results.add(bankDeposit);
             }
-            return results;
+            return results.stream().sorted((a, b) -> -a.getTime().compareTo(b.getTime())).collect(Collectors.toList());
         }
 
         @Override
@@ -211,7 +212,7 @@ public enum BankType {
                     results.add(bankDeposit);
                 }
             }
-            return results;
+            return results.stream().sorted((a, b) -> -a.getTime().compareTo(b.getTime())).collect(Collectors.toList());
         }
 
         @Override
@@ -362,7 +363,7 @@ public enum BankType {
                 bankDeposit.setDepositType(DepositType.PERSON);
                 results.add(bankDeposit);
             }
-            return results;
+            return results.stream().sorted((a, b) -> -a.getTime().compareTo(b.getTime())).collect(Collectors.toList());
         }
 
         @Override
@@ -444,7 +445,7 @@ public enum BankType {
                 bankDeposit.setDepositType(DepositType.UNIT);
                 results.add(bankDeposit);
             }
-            return results;
+            return results.stream().sorted((a, b) -> -a.getTime().compareTo(b.getTime())).collect(Collectors.toList());
         }
     },
 
@@ -521,7 +522,7 @@ public enum BankType {
                     ReflectUtils.setValue(bankDeposit, field, val);
                 }
             }
-            return results;
+            return results.stream().sorted((a, b) -> -a.getTime().compareTo(b.getTime())).collect(Collectors.toList());
         }
 
         @Override
